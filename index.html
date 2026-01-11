@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Chronicle</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        // Simple password protection
+        (function () {
+            const CORRECT_PASSWORD = "ivan1987";
+            const stored = sessionStorage.getItem('life_chronicle_auth');
+
+            if (stored !== CORRECT_PASSWORD) {
+                const entered = prompt("Enter password to access Life Chronicle:");
+                if (entered !== CORRECT_PASSWORD) {
+                    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0d1117;color:#e6edf3;font-family:sans-serif;">Access Denied</div>';
+                    throw new Error('Access denied');
+                }
+                sessionStorage.setItem('life_chronicle_auth', entered);
+            }
+        })();
+    </script>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent: #58a6ff;
+            --accent-hover: #79b8ff;
+            --border: #30363d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.7;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 24px 16px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .sidebar-controls button {
+            flex: 1;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-controls button:hover {
+            background: var(--border);
+            color: var(--text-primary);
+        }
+
+        .nav-item {
+            display: block;
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: rgba(88, 166, 255, 0.1);
+            color: var(--accent);
+        }
+
+        .nav-item.h3 {
+            padding-left: 28px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .main {
+            flex: 1;
+            margin-left: 280px;
+            padding: 48px 64px;
+            max-width: 900px;
+        }
+
+        .content h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .content h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-top: 48px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .content h2::before {
+            content: '▼';
+            font-size: 0.7rem;
+            transition: transform 0.2s ease;
+            color: var(--text-muted);
+        }
+
+        .content h2.collapsed::before {
+            transform: rotate(-90deg);
+        }
+
+        .content h2:hover {
+            color: var(--accent);
+        }
+
+        .content h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 32px;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .content h3::before {
+            content: '▾';
+            font-size: 0.65rem;
+            transition: transform 0.2s ease;
+            color: var(--text-muted);
+        }
+
+        .content h3.collapsed::before {
+            transform: rotate(-90deg);
+        }
+
+        .content h3:hover {
+            color: var(--accent);
+        }
+
+        .content p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+
+        .content blockquote {
+            border-left: 3px solid var(--accent);
+            padding-left: 16px;
+            margin: 16px 0;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .content ul,
+        .content ol {
+            margin: 16px 0;
+            padding-left: 24px;
+        }
+
+        .content li {
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .content strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .content hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 40px 0;
+        }
+
+        .tag {
+            display: inline-block;
+            background: rgba(88, 166, 255, 0.15);
+            color: var(--accent);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin: 0 2px;
+        }
+
+        .section-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease, opacity 0.3s ease;
+        }
+
+        .section-content.collapsed {
+            max-height: 0 !important;
+            opacity: 0;
+        }
+
+        .mobile-toggle {
+            display: none;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 1000;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                z-index: 999;
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 24px;
+            }
+
+            .mobile-toggle {
+                display: block;
+            }
+
+            .content h1 {
+                margin-top: 48px;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+    </style>
+</head>
+
+<body>
+    <button class="mobile-toggle" onclick="toggleSidebar()">☰ Menu</button>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h1>📖 Life Chronicle</h1>
+            <div class="sidebar-controls">
+                <button onclick="expandAll()">Expand All</button>
+                <button onclick="collapseAll()">Collapse All</button>
+            </div>
+        </div>
+        <nav id="nav"></nav>
+    </aside>
+
+    <main class="main">
+        <div class="content" id="content"></div>
+    </main>
+
+    <!--
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║   ✏️  EDIT YOUR LIFE STORY BELOW  ✏️                                         ║
+║                                                                              ║
+║   Write in Markdown format. Save the file and refresh browser to see.       ║
+║   Use #tags like #love #work #family to categorize moments.                  ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+-->
+
+    <script id="life-content" type="text/markdown">
+# Life Chronicle
+
+> This is your chronological life story. Write freely — the viewer will make it beautiful.
+> Use `#tags` anywhere to categorize moments: `#love` `#work` `#family` `#growth` `#challenge` `#joy`
+
+---
+
+## Personal Philosophy: Anchoring Thoughts #wisdom
+
+> "I love the freedom of creating my own path and being the architect of my own work."
+
+### My Essential Autonomy #freedom #wealth
+For my fulfillment, it is essential to:
+1. **Exercise Agency**: I thrive when I have the freedom to make my own decisions.
+2. **Infinite Upside**: I am built for a world where my rewards are a direct reflection of the value I provide.
+3. **Internal Security**: I focus on self-reliance as my primary source of stability and psychological strength.
+
+### The "High Quality Person" Manifesto #responsibility #character
+Being a "High Quality Person" means:
+- **Total Responsibility**: Taking 100% responsibility for my life. No blaming circumstances.
+- **Proactive Adjustment**: If things are bad, I don't complain; I adapt and find the path back to the goal.
+- **Active Help-Seeking**: If I need help, I ask for it. I don't wait passively for someone to notice.
+- **Outcome-Oriented**: My actions are focused on results, not on destructive attention-seeking from authority.
+- **Radical Honesty**: Admitting when I don't know something. Having the "Balls" to say "No" to unfavorable terms.
+
+### The Flow of Life (Living in Real-Time) #strategy
+- **Flow vs. Blindness**: Flow is the ability to see current circumstances (wind, waves, crew status) and make decisions based on *now*, not on how things "should be."
+- **Ending Resistance**: Resistance is "psovanje" (cursing) against reality. To stop suffering, I must give reality "permission" to exist exactly as it already does.
+- **Be a Flame**: Not just passing the grade, but setting the bar. Reaching for my own limits to see if they are real or if I can do more. Benefit the community by being a shining example.
+
+---
+
+## The Ideation Vault: Books & Projects #vision #creativity
+
+### Book Seed: "High Quality Person"
+A book about the correlation between responsibility and quality of life. Defining the "Responsible Human" as the pinnacle of evolution.
+
+### Book Seed: "Get Better at Life" (Don't Pass the Grade - Set the Bar!)
+Reframing the school-mindset. Moving away from satisfying external criteria (GPA/Grades) toward internal excellence and passion. 
+
+### Project: The Natural Man (Center for Authenticity)
+A center focused on the "Natural Self" vs. the "Trained/False Self." 
+- **The Core Problem**: Most people live "trained" lives to avoid punishment or seek approval from the "tribe."
+- **The Solution**: Layer-by-layer discovery of the authentic self through safe spaces, exercises, and radical transparency.
+- **The Practice**: Using voice, breathwork, and movement to reconnect with the "radio signal" of the soul.
+
+---
+
+## The Path to Excellence: Bliss Jobs & Value Creation #work #mission
+
+### The Bliss Selection Framework
+How to find my "Bliss Job":
+1. **Unthreatened Passion**: What would I do even if my existence wasn't money-dependent?
+2. **Value Exchange**: Money is made by providing value to others. Value is created through focused attention and skill. 
+3. **The Fastest Path**: Doing what you love is the fastest way to excellence. Excellence is the fastest way to freedom.
+
+### "My Millionaire Foundation" (Prosperity with Peace)
+- **The Vision**: Having $1,000,000+ while maintaining total peace, silence, and presence. 
+- **The "Icing on the Cake"**: Money is the warm breeze that makes a solid spiritual house more comfortable. I don't *need* the breeze, but I appreciate it.
+- **Legacy**: Building a "Platform of Life" where I live entirely by my own value creation.
+
+### Active Projects #projects
+- **Bolt Surge**: A real-time surge tracking application for Bolt drivers. This is my current "Bliss Job" project—work that energizes rather than drains me. Just restarted the service (Jan 9, 2026).
+
+---
+
+## Psychological Frameworks: Navigating the Mind #mind #psychology
+
+### Attachment vs. Resistance
+- **Attachment**: Clinging to an alternate scenario in hope of *more* happiness.
+- **Resistance**: Clinging to an alternate scenario to *avoid* less happiness.
+- **Solution**: Identify the "alternate scenario" (wishful or obsolete) and release it back into the current flow.
+
+### The Visibility Gap (Revised)
+My background shame (currently at 40% capacity) is a "visibility inhibitor." It makes me want to hide until I am "perfect" or "finished."
+- **Strategy**: Move toward visibility through authenticity, not through perfection. Being "seen" in the process is part of the cure.
+
+### Anxiety as a GPS Error
+Anxiety happens when your "GPS map" (past fears) doesn't match the "road ahead" (current reality). The job of the present mind is to question the past mind and check if the circumstances have actually changed.
+
+## Limiting Paradigms #psychology #growth
+
+> This is an ever-expanding segment for identifying and resolving the "software bugs" in my operating system.
+
+### 1. The "Tender for Money" Mindset #money #childhood
+- **The Belief**: "I am only allowed to have money if I have a clear, defendable justification for how I will spend it."
+- **The Root**: Childhood experiences where asking for money meant proving worthiness. It felt like "applying for government funds" or a competitive tender. If the justification wasn't "immediately understandable," the money didn't come.
+- **The Effect**: I rarely allow money into my life unless I have a crystal-clear vision for its use. It creates a "heavy" vibe about money.
+- **The Goal**: Transition to the "Musk Mindset"—a light, effortless vibe where money is like flying for a bird. You just "flap your wings." Money can flow in without a specific "plan" already attached to it.
+
+### The Win-Win Generator #relationships #money
+Moving from **Lose-Win** (sacrificing self for others) to **Win-Win** (transparent exchange of value).
+- **Lijek (Cure)**: Constantly ask: "What do *I* need? What do *I* want?"
+- **The Deal**: Offer deals that are good for both parties. Profit from mutual benefit, not from one side's loss.
+
+---
+
+### Future Vision: The Integrated Life #vision #prosperity
+
+- **The "External" Interlude (Taxi/Platform)**: I view my current car rental and taxi work as a necessary "interlude" to the external world. It is my way of ensuring I have "tried the good things" in life so I have no regrets when I move into deeper peace.
+- **The Modern Monastery**: My ultimate dream is a "samostan" (monastery) feel—a life of peace, stable marmalade on butter, and feeling God's presence, but without being "excused" from the world. I want to be *of* the world but not *in* it.
+- **Prosperity with Presence**: I am building toward a $1.5M - $2M cushion. Not for greed, but to provide for my family (Bregitte, future children) and to "decorate my spiritual house."
+- **High-Quality Relationships**: I value deep, high-integrity love. I seek a relationship where my self-respect is the foundation for her respect and attraction. I prioritize being myself over maintaining a "persona."
+
+---
+
+## Reflections & Patterns #reflection
+
+- **The Visibility Gap**: There is a "back burner" process of shame that doesn't burden me daily but prevents me from feeling 100% amazing. Currently, I feel like I'm at **40% capacity**. This lingering sense of not being fully proud prevents me from wanting to be "seen" directly by others. I can't feel fully proud of myself while these factors are present.
+- **Attachment vs. Resistance**: I am learning to identify when I am clinging to "wishful scenarios" (how I want things to be) versus "obsolete scenarios" (how things used to be). My goal is to release these and flow with the *current waves*.
+- **The "Cards I Was Dealt"**: I'm trying to reframe this through faith. God blessed me with a large family. While asking for help feels like a drawback, the help itself is the upside. I need to play the cards God gave me.
+- **Smoothing the Shocks**: The long-term plan is to use financial tools (installments) to align expenses perfectly with rental income, removing the emotional "shocks" of large, unexpected bills.
+
+---
+
+## Year 38: Present (2025/2026) #now #growth
+
+**Current Situation & The Great Pivot** #freedom #work
+
+Currently going through a fundamental life transformation. After over a decade in the family business ecosystem, I am moving toward complete independence.
+
+- **Marriage**: Currently married. My wife works at **IKEA** (salary ~1,200€), providing a stable foundation while I transition. #marriage
+- **The Uber Phase (2024-2025)**: Started driving Uber intermittently over the last two years. This was a purely psychological move — a way to prove to myself that I am not solely dependent on my brother for survival. #independence
+- **Financial Independence Strategy**: 
+    - Took a bank loan last year to buy **two cars**. 
+    - Initial plan: Rent one, drive one for Uber.
+    - **Current Plan**: Renting **both cars** to generate semi-passive income. I have stopped driving Uber to focus entirely on passion projects.
+- **The Goal**: Turning passion projects into sustainable, fulfilling ways to support myself without feeling emotionally drained.
+
+### January 2026: Ongoing Challenges #challenge #lifestyle
+
+- **Today's Focus (Jan 9)**: 
+    - [x] **Needle Mover**: Call/Meet Stipe (Strategy move, obrt registration, credit score pump). -> **Result: Asked him and he said OK!** 🚀
+    - [ ] **Needle Mover**: Budget with Bregitte (Coat purchase moved to next week's afternoon shift).
+    - [/] **Needle Mover**: Prepare car rental ad text (Ready for next week's tires). -> *Update: Planning to post today with "Available from 16.1." note.*
+    - [ ] **Peace Task**: Give Dad the money.
+- **The Stipe Move (Credit Score Strategy)**: Reached out to Stipe (Jan 9) to repeat the "income pump" strategy (isplata na obrt). 
+    - **Result**: He agreed. This secures the plan to boost the 3-month average for a bank card (5-6k limit).
+    - **Constraint**: Leaving room in the "paušalni" limit for future project income.
+- **The IKEA Rhythm**: Every day she works, I drop her off and pick her up (15 min drive each way). Today: Pick up at 15:45 (she works 8:00–16:00). It breaks my day into two distinct blocks of work.
+- **Weekly Sports**: **Football** (Friday, 17:30–19:00). Essential for clearing the mind and "releasing the tension." #joy #health
+- **The Washing Machine Saga**: Laundry machine broke down ~2 weeks ago. 
+    - **Status**: Technician scheduled to come **Monday (Jan 12) between 9:00–10:00 AM**. 
+    - **Cost**: Likely covered by my father.
+- **The Health Insurance Puzzle**: Currently off the taxi firm's payroll. 
+    - **Problem**: Brother fears that 1h employment will trigger a state charge for the remaining 7h (difference to full time).
+    - **Verified Fact**: Research confirms that for "paušalni obrt", having *any* employment (even 1h) classifies the trade as a "second activity."
+    - **Outcome**: No monthly contributions. You pay ONE annual bill.
+    - **The Calculation**: For your target of **~20,000€** (4th bracket: 19.900€ - 30.600€), the total annual contribution is **~803€**. 
+    - **Saving**: Compared to full employment (~3,000€/year), this strategy saves you **~2,200€/year**. The strategy is basically a financial no-brainer.
+    - **Strategy**: Register at my brother's company for 1-2 hours/month just to secure health insurance. This avoids a major monthly drain while I build the platform.
+- **The Car Registration Worry**: Projecting a 1,500€–2,000€ cost in June for both cars.
+
+### Current Challenges: The Car & The Credit Score #money #family
+
+*Current State (Jan 2026):*
+- **The Repair Trap**: One of the two rental cars has been a "money pit" recently. Bought 6 months ago, but had nearly **3,000€ in repairs** already. Income (~150€/week) is barely covering the fixes — zero profit so far.
+- **The Tire Saga**: Bought new all-seasons (320€) via installments.
+    - **Status**: Waiting for delivery (likely next week). 
+    - **Next Step**: Posting the ad TODAY with availability from Jan 16 to secure a renter early.
+- **The "Subscription" Strategy**: To manage the tire cost, I used my sister **Anica's** credit card for 12 installments. I'm reframing this as a "tire subscription" rather than a one-time blow.
+- **The Credit Score Play**: My goal is to get my own bank card that allows splitting ATM withdrawals into installments. This would be a crucial "cushion" for shocks like the upcoming **Zupčasti remen (engine belt)** and oil leak (~700€).
+- **The "Fake" Income Plan**: Bank needs 3 months of steady income. I plan to ask my brother's company to pay me a sum which I will immediately return in cash—purely to pump my credit score.
+
+### The Financial Platform & Future Vision #goals #future
+
+- **Building the "Boat"**: My goal for the car rentals is to create a "financial platform." It's not just about the money; it's about **buying back my time** so I can invest in "real projects" where I can provide true value to people and enjoy my work. 
+- **The Installment Target**: Aiming for a bank card with a **5,000€–6,000€ limit**. If I get this, every repair (like the upcoming 700€ engine belt) and the **June registration costs** (estimated 1,500€–2,000€) becomes a manageable monthly installment rather than a devastating shock.
+- **Strategic Expansion**: Potentially getting an increased bank loan to buy a **third car** to add to the rental platform.
+- **Vision for my Wife**: Currently, she works at IKEA to support us, but the long-term goal is to free her too.
+    - **Step 1: Mobility**: She needs to pass her **driver's exam** (upcoming cost).
+    - **Step 2: The Second Car**: Once she has a license, she'll either drive our old car or we'll need a cheap used one for her. This is a key prerequisite for her autonomy.
+    - **Her Dream**: She wants to have her own **restaurant**. I want this platform to give her the freedom to pursue that. #dreams
+
+### Psychological Reflections: Shame and Gratitude #faith
+
+- **The Big Enough Boat**: I feel like I'll have just enough of a "boat" to float through these registration costs in June. It might not be "happy or enjoyable" work, but it's the path I've chosen and I'm doing my best with it.
+- **The Sense of Shame**: There's a persistent feeling of shame/scrapping being 38 years old and still needing to ask siblings for favors or credit cards. It feels like "begging" even when it's just a small favor.
+- **The Visibility Gap**: There is a "back burner" process of shame that doesn't burden me daily but prevents me from feeling 100% amazing. Currently, I feel like I'm at **40% capacity**. This lingering sense of not being fully proud prevents me from wanting to be "seen" directly by others. I can't feel fully proud of myself while these factors are present.
+- **The "Cards I Was Dealt"**: I'm trying to reframe this through faith. God blessed me with a large family. While asking for help feels like a drawback, the help itself is the upside. I need to play the cards God gave me.
+- **Smoothing the Shocks**: The long-term plan is to use financial tools (installments) to align expenses perfectly with rental income, removing the emotional "shocks" of large, unexpected bills.
+
+---
+
+## Thirties (30-37)
+
+### Year 37
+### Year 36
+### Year 35
+### Year 34
+### Year 33
+### Year 32
+### Year 31
+### Year 30
+
+---
+
+## Mid Twenties (25-29)
+
+### Year 29
+### Year 28
+### Year 27
+### Year 26
+### Year 25
+
+---
+
+## College & Early Adulthood (19-24)
+
+### Years 23-24
+### Years 21-22
+### Years 19-20
+
+---
+
+## High School (15-18)
+
+### Year 17-18: Fourth Year (2004-2005)
+### Year 16-17: Third Year (2003-2004)
+### Year 15-16: Second Year (2002-2003)
+### Year 14-15: First Year (2001-2002)
+
+---
+
+## Elementary School (6-14)
+
+### Year 13: Eighth Grade (2000-2001)
+### Year 12: Seventh Grade (1999-2000)
+### Year 11: Sixth Grade (1998-1999)
+### Year 10: Fifth Grade (1997-1998)
+### Year 9: Fourth Grade (1996-1997)
+### Year 8: Third Grade (1995-1996)
+### Year 7: Second Grade (1994-1995)
+### Year 6: First Grade (1993-1994)
+
+---
+
+## Early Childhood (0-5)
+
+### Year 5 (1991-1992)
+### Year 4 (1990-1991)
+### Year 3 (1989-1990)
+### Year 2 (1988-1989)
+### Year 1 (1987-1988)
+
+---
+
+## Family Background (Raw Data) #family #backlog
+
+Born in **Zagreb, Croatia** in 1987.
+
+### Parents
+**Father**: Ante (born 1947)
+**Mother**: Mira (1953-2024) — passed away February 2024
+
+### Living Situation #home
+Currently living in the family house in **Zagreb**. 
+- **The House**: A three-story building plus a basement.
+- **Layout**:
+    - **Top Floor**: Me and my wife have our own independent apartment.
+    - **First Floor**: My father (**Ante**) and youngest brother (**Marko**) live/sleep here.
+    - **Ground Floor**: Shared space (living room, etc.).
+- **Context**: Most siblings have moved out, leaving us with our father and youngest brother. This provides a "financial cushion" and family presence while we transition into our own projects.
+
+### Siblings
+One of seven children — the fourth child:
+1. **Anica** (sister, born 1981) — eldest
+2. **Domagoj** "Domo" (brother, born 1983)
+3. **Stjepan** "Stipe" (brother, born 1984)
+4. **Ivan** (born 1987) — **me**
+5. **Andrija** "Andro" (brother, born 1988)
+6. **Josip** (brother, born 1993)
+7. **Marko** (brother, born 1996) — has Down syndrome
+
+---
+
+## Career History (Raw Data) #work #backlog
+
+### Stype (2012-2022)
+Worked at my brother **Stipe's** company, **Stype** (stype.tv), which serves the TV and film industry.
+- Joined at the end of 2012.
+- Worked there for nearly a decade with some interruptions.
+- **The Breaking Point**: Eventually felt "fed up" with working for someone else. 
+- **Realization**: I lacked the freedom to make major decisions and the ability to scale my income based on the quality of my work.
+
+</script>
+
+    <script>
+        function loadContent() {
+            const contentEl = document.getElementById('content');
+            let markdown = document.getElementById('life-content').textContent;
+
+            // Convert #tags to styled spans (but not code blocks or headers)
+            markdown = markdown.replace(/(?<!`)(#(?!#)\w+)/g, '<span class="tag">$1</span>');
+
+            contentEl.innerHTML = marked.parse(markdown);
+            buildNavigation();
+            setupCollapsibility();
+        }
+
+        function buildNavigation() {
+            const navEl = document.getElementById('nav');
+            const headers = document.querySelectorAll('.content h2, .content h3');
+
+            let navHTML = '';
+            headers.forEach((header, index) => {
+                const id = 'section-' + index;
+                header.id = id;
+                const level = header.tagName.toLowerCase();
+                const text = header.textContent.replace('▼', '').replace('▾', '').trim();
+                navHTML += `<a class="nav-item ${level}" onclick="scrollToSection('${id}')">${text}</a>`;
+            });
+
+            navEl.innerHTML = navHTML;
+        }
+
+        function setupCollapsibility() {
+            const headers = document.querySelectorAll('.content h2, .content h3');
+
+            headers.forEach(header => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'section-content';
+
+                let sibling = header.nextElementSibling;
+                const headerLevel = parseInt(header.tagName.charAt(1));
+
+                while (sibling && !isHeaderOfLevelOrHigher(sibling, headerLevel)) {
+                    const next = sibling.nextElementSibling;
+                    wrapper.appendChild(sibling);
+                    sibling = next;
+                }
+
+                header.after(wrapper);
+                header.addEventListener('click', () => {
+                    header.classList.toggle('collapsed');
+                    wrapper.classList.toggle('collapsed');
+                });
+            });
+        }
+
+        function isHeaderOfLevelOrHigher(el, level) {
+            if (!el) return false;
+            const match = el.tagName.match(/^H(\d)$/);
+            return match && parseInt(match[1]) <= level;
+        }
+
+        function scrollToSection(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                if (el.classList.contains('collapsed')) {
+                    el.classList.remove('collapsed');
+                    el.nextElementSibling?.classList.remove('collapsed');
+                }
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+                document.querySelector(`[onclick="scrollToSection('${id}')"]`)?.classList.add('active');
+            }
+            document.getElementById('sidebar').classList.remove('open');
+        }
+
+        function expandAll() {
+            document.querySelectorAll('.content h2, .content h3').forEach(h => h.classList.remove('collapsed'));
+            document.querySelectorAll('.section-content').forEach(s => s.classList.remove('collapsed'));
+        }
+
+        function collapseAll() {
+            document.querySelectorAll('.content h2, .content h3').forEach(h => h.classList.add('collapsed'));
+            document.querySelectorAll('.section-content').forEach(s => s.classList.add('collapsed'));
+        }
+
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+        loadContent();
+    </script>
+</body>
+
+</html>
